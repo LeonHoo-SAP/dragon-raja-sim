@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>龙族 Dragon Raja · 属性模拟器</title>
+<style>
+  /* ===== CSS Custom Properties ===== */
+  :root {
+    --bg-deep: #0c0b0f;
+    --bg-card: #14121a;
+    --bg-surface: #1a1723;
+    --border-subtle: #2a2535;
+    --border-active: #c9a44b;
+    --text-primary: #e8e0d0;
+    --text-secondary: #9a9288;
+    --text-dim: #605a52;
+    --accent-fire: #e94560;
+    --accent-gold: #c9a44b;
+    --accent-ice: #5bc0de;
+    --accent-life: #5cb85c;
+    --accent-warning: #f0ad4e;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --font-display: 'Georgia', 'Times New Roman', serif;
+    --font-body: 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Subtle background texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(201,164,75,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 60%, rgba(233,69,96,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse at 50% 90%, rgba(91,192,222,0.03) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 16px 16px 40px;
+  }
+
+  /* ===== Header ===== */
+  .header {
+    text-align: center;
+    padding: 28px 0 20px;
+  }
+  .header-icon {
+    font-size: 48px;
+    display: block;
+    filter: drop-shadow(0 4px 12px rgba(201,164,75,0.5));
+    animation: float 3s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  .header h1 {
+    font-family: var(--font-display);
+    font-size: 26px;
+    color: var(--accent-gold);
+    letter-spacing: 3px;
+    margin-top: 4px;
+  }
+  .header .subtitle {
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+  .header .divider {
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-fire), transparent);
+    margin: 14px auto 0;
+  }
+
+  /* ===== Section Card ===== */
+  .section {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 18px;
+    margin-bottom: 14px;
+    transition: border-color 0.3s;
+  }
+  .section:hover {
+    border-color: rgba(201,164,75,0.2);
+  }
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    margin-bottom: 14px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-subtle);
+  }
+
+  /* ===== Class Picker ===== */
+  .class-picker {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+  .class-card {
+    position: relative;
+    padding: 12px 4px 10px;
+    background: var(--bg-surface);
+    border: 2px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+  }
+  .class-card:hover {
+    border-color: rgba(201,164,75,0.4);
+    transform: translateY(-2px);
+  }
+  .class-card:active { transform: scale(0.96); }
+  .class-card.selected {
+    border-color: var(--accent-gold);
+    background: linear-gradient(180deg, rgba(201,164,75,0.12) 0%, rgba(201,164,75,0.03) 100%);
+    box-shadow: 0 0 20px rgba(201,164,75,0.15);
+  }
+  .class-card.selected::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 20%;
+    right: 20%;
+    height: 2px;
+    background: var(--accent-gold);
+    border-radius: 1px;
+  }
+  .class-card .class-icon { font-size: 26px; display: block; margin-bottom: 4px; }
+  .class-card .class-name { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+  .class-card .class-role {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  /* ===== Sub-Class Picker ===== */
+  .sub-class-picker {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .sub-class-card {
+    padding: 10px 6px;
+    background: var(--bg-surface);
+    border: 2px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    user-select: none;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+  .sub-class-card:hover {
+    border-color: rgba(91,192,222,0.4);
+    color: var(--text-primary);
+    transform: translateY(-2px);
+  }
+  .sub-class-card:active { transform: scale(0.96); }
+  .sub-class-card.selected {
+    border-color: var(--accent-gold);
+    background: linear-gradient(180deg, rgba(201,164,75,0.12) 0%, rgba(201,164,75,0.03) 100%);
+    color: var(--accent-gold);
+    box-shadow: 0 0 16px rgba(201,164,75,0.12);
+  }
+  .sub-class-card .sc-role {
+    display: block;
+    font-size: 10px;
+    font-weight: 400;
+    opacity: 0.7;
+    margin-top: 2px;
+  }
+  .sub-class-card .sc-bonus {
+    display: block;
+    font-size: 10px;
+    color: var(--accent-life);
+    margin-top: 3px;
+    font-weight: 400;
+  }
+
+  /* ===== Rank Selector ===== */
+  .rank-selector {
+    display: flex;
+    gap: 6px;
+  }
+  .rank-chip {
+    flex: 1;
+    padding: 8px 4px;
+    background: var(--bg-surface);
+    border: 2px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+  .rank-chip:hover {
+    border-color: rgba(201,164,75,0.4);
+    color: var(--text-primary);
+  }
+  .rank-chip:active { transform: scale(0.95); }
+  .rank-chip.selected {
+    border-color: var(--accent-gold);
+    background: linear-gradient(180deg, rgba(201,164,75,0.12) 0%, rgba(201,164,75,0.03) 100%);
+    color: var(--accent-gold);
+    box-shadow: 0 0 12px rgba(201,164,75,0.12);
+  }
+  .rank-chip .rank-num {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 14px;
+  }
+  .rank-chip .rank-label {
+    display: block;
+    font-size: 10px;
+    opacity: 0.7;
+    margin-top: 1px;
+  }
+
+  /* ===== Level Control ===== */
+  .level-control {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .level-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    font-weight: 600;
+  }
+  .level-pip-track {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    background: var(--bg-surface);
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+    border: 1px solid var(--border-subtle);
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--accent-gold);
+    border: 2px solid var(--bg-deep);
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(201,164,75,0.4);
+    transition: box-shadow 0.2s;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover {
+    box-shadow: 0 0 18px rgba(201,164,75,0.7);
+  }
+  .level-pip-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+  .level-display {
+    min-width: 52px;
+    text-align: center;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 4px 8px;
+  }
+  .level-display .level-num {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: bold;
+    color: var(--accent-gold);
+    line-height: 1;
+  }
+  .level-display .level-hint {
+    font-size: 9px;
+    color: var(--text-dim);
+  }
+
+  /* ===== Points Badge ===== */
+  .points-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px;
+    background: var(--bg-surface);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    margin-bottom: 14px;
+    transition: all 0.3s;
+  }
+  .points-badge.depleted {
+    border-color: rgba(233,69,96,0.3);
+    background: rgba(233,69,96,0.06);
+  }
+  .points-badge.full {
+    border-color: rgba(92,184,92,0.3);
+    background: rgba(92,184,92,0.06);
+  }
+  .points-icon {
+    font-size: 22px;
+    opacity: 0.7;
+  }
+  .points-text { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+  .points-value {
+    font-family: var(--font-display);
+    font-size: 34px;
+    font-weight: bold;
+    color: var(--accent-gold);
+    line-height: 1;
+    min-width: 50px;
+    text-align: center;
+  }
+  .points-badge.depleted .points-value { color: var(--accent-fire); }
+  .points-badge.full .points-value { color: var(--accent-life); }
+
+  /* ===== Stat Rows ===== */
+  .stat-list { display: flex; flex-direction: column; gap: 2px; }
+
+  .stat-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 44px 138px;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 8px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface);
+    border: 1px solid transparent;
+    transition: all 0.2s;
+  }
+  .stat-row:hover {
+    border-color: var(--border-subtle);
+    background: #1d1a26;
+  }
+  .stat-row.primary-stat {
+    background: linear-gradient(90deg, rgba(201,164,75,0.06) 0%, var(--bg-surface) 60%);
+  }
+
+  .stat-name-block { display: flex; align-items: center; gap: 4px; }
+  .stat-priority {
+    font-size: 10px;
+    color: var(--accent-gold);
+    visibility: hidden;
+  }
+  .stat-row.primary-stat .stat-priority { visibility: visible; }
+  .stat-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+  }
+  .stat-row.at-cap .stat-name { color: var(--accent-fire); }
+
+  .stat-bar-track {
+    height: 4px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .stat-bar-fill {
+    height: 100%;
+    background: var(--accent-ice);
+    border-radius: 2px;
+    transition: width 0.3s ease, background 0.3s;
+  }
+  .stat-row.at-cap .stat-bar-fill { background: var(--accent-fire); }
+  .stat-row.primary-stat .stat-bar-fill { background: var(--accent-gold); }
+
+  .stat-current {
+    text-align: center;
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--accent-ice);
+    min-width: 40px;
+  }
+  .stat-row.at-cap .stat-current { color: var(--accent-fire); }
+  .stat-row.primary-stat .stat-current { color: var(--accent-gold); }
+
+  .stat-arrows {
+    display: flex;
+    gap: 2px;
+  }
+  .stat-arrows button {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    font-size: 17px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .stat-arrows button:hover:not(:disabled) {
+    border-color: var(--accent-gold);
+    color: var(--accent-gold);
+  }
+  .stat-arrows button:active:not(:disabled) { transform: scale(0.93); }
+  .stat-arrows button:disabled {
+    opacity: 0.2;
+    cursor: not-allowed;
+  }
+  .stat-arrows .arrow-up { color: var(--accent-life); }
+  .stat-arrows .arrow-down { color: var(--accent-fire); }
+
+  /* ===== Derived Stats ===== */
+  .derived-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .derived-cell {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-surface);
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+  }
+  .derived-label { font-size: 11px; color: var(--text-dim); }
+  .derived-value {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: bold;
+    color: var(--accent-ice);
+  }
+
+  /* ===== ±10 Buttons in stat row ===== */
+  .stat-arrows .arrow-plus10,
+  .stat-arrows .arrow-minus10 {
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .stat-arrows .arrow-plus10 {
+    color: var(--accent-gold);
+  }
+  .stat-arrows .arrow-minus10 {
+    color: var(--accent-fire);
+  }
+  .stat-arrows .arrow-plus10:hover:not(:disabled) {
+    border-color: var(--accent-gold);
+    background: rgba(201,164,75,0.15);
+    color: var(--accent-gold);
+  }
+  .stat-arrows .arrow-minus10:hover:not(:disabled) {
+    border-color: var(--accent-fire);
+    background: rgba(233,69,96,0.12);
+    color: var(--accent-fire);
+  }
+
+  /* ===== Actions ===== */
+  .actions {
+    display: flex;
+    gap: 10px;
+  }
+  .btn {
+    flex: 1;
+    padding: 12px 16px;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent-gold), #a8862a);
+    color: var(--bg-deep);
+    box-shadow: 0 3px 12px rgba(201,164,75,0.25);
+  }
+  .btn-primary:hover { box-shadow: 0 5px 18px rgba(201,164,75,0.4); }
+  .btn-secondary {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+  }
+  .btn-secondary:hover {
+    border-color: rgba(255,255,255,0.25);
+    color: var(--text-primary);
+  }
+  .btn-reset {
+    flex: 0;
+    padding: 12px 18px;
+    background: transparent;
+    border: 1px solid rgba(233,69,96,0.3);
+    color: var(--accent-fire);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+  .btn-reset:hover { background: rgba(233,69,96,0.1); }
+
+  /* ===== Share Area ===== */
+  .share-url {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    color: var(--accent-ice);
+    word-break: break-all;
+    display: none;
+    font-family: monospace;
+  }
+
+  /* ===== Toast ===== */
+  .toast-bar {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: #1a1723;
+    border: 1px solid var(--accent-gold);
+    color: var(--accent-gold);
+    padding: 10px 22px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 100;
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  }
+  .toast-bar.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ===== Footer ===== */
+  .footer {
+    text-align: center;
+    padding: 20px 0;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 400px) {
+    .class-picker { grid-template-columns: repeat(3, 1fr); }
+    .sub-class-picker { grid-template-columns: repeat(2, 1fr); }
+    .stat-row { grid-template-columns: 64px 1fr 28px 120px; gap: 4px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Header -->
+  <header class="header">
+    <span class="header-icon">🐉</span>
+    <h1>DRAGON RAJA</h1>
+    <p class="subtitle">属性加点模拟器 · 龙族</p>
+    <div class="divider"></div>
+  </header>
+
+  <!-- Class Selection -->
+  <section class="section">
+    <div class="section-label">职业选择</div>
+    <div class="class-picker" id="classPicker"></div>
+  </section>
+
+  <!-- Sub-Class Picker -->
+  <section class="section" id="subClassSection">
+    <div class="section-label">转职职业</div>
+    <div class="sub-class-picker" id="subClassPicker"></div>
+  </section>
+
+  <!-- Rank Selection -->
+  <section class="section">
+    <div class="section-label">转职阶段</div>
+    <div class="rank-selector" id="rankSelector"></div>
+  </section>
+
+  <!-- Level -->
+  <section class="section">
+    <div class="section-label">角色等级</div>
+    <div class="level-control">
+      <span class="level-label">Lv</span>
+      <div class="level-pip-track">
+        <input type="range" id="levelSlider" min="1" max="150" value="60">
+        <div class="level-pip-labels"><span>1</span><span>40</span><span>80</span><span>120</span><span>150</span></div>
+      </div>
+      <div class="level-display">
+        <div class="level-num" id="levelNumber">60</div>
+        <div class="level-hint" id="levelTotal">600 点</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Remaining Points -->
+  <div class="points-badge" id="pointsBadge">
+    <span class="points-icon">✦</span>
+    <div>
+      <div class="points-text">剩余点数</div>
+    </div>
+    <div class="points-value" id="remainingDisplay">0</div>
+  </div>
+
+  <!-- Stats Allocation -->
+  <section class="section">
+    <div class="section-label">属性分配</div>
+    <div class="stat-list" id="statList"></div>
+  </section>
+
+  <!-- Derived Stats -->
+  <section class="section">
+    <div class="section-label">衍生属性</div>
+    <div class="derived-grid" id="derivedGrid"></div>
+  </section>
+
+<!-- Actions -->
+  <section class="section">
+    <div class="section-label">撤销 / 恢复 / 重置</div>
+    <div class="actions">
+      <button class="btn btn-secondary" id="btnUndo" title="Ctrl+Z">↩ 撤销</button>
+      <button class="btn btn-secondary" id="btnRedo" title="Ctrl+Y">↪ 恢复</button>
+      <button class="btn btn-reset" id="btnResetClass">↺ 重置属性</button>
+    </div>
+    <div style="margin-top:10px;">
+      <button class="btn btn-reset" id="btnFullReset" style="width:100%;">⚠ 一键重置全部 (职业/等级/转职/属性)</button>
+    </div>
+    <div class="actions" style="margin-top:10px;">
+      <button class="btn btn-primary" id="btnShare" style="flex:1;">🔗 生成分享链接</button>
+      <button class="btn btn-secondary" id="btnCopy" style="display:none">📋 复制链接</button>
+    </div>
+    <div class="share-url" id="shareUrl"></div>
+  </section>
+
+  <footer class="footer">
+    龙族 Dragon Raja Online · 经典怀旧<br>
+    数据基于原版游戏公式估算
+  </footer>
+</div>
+
+<div class="toast-bar" id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ============================================================
+  // GAME DATA
+  // ============================================================
+
+  // Rank caps: each class has 6 ranks (0=未转职, 1=一转, ..., 5=五转)
+  // Data from official stat cap table
+
+  const CLASS_DEFS = {
+    warrior: {
+      id: 'warrior',
+      name: '战士',
+      icon: '⚔️',
+      role: '近战坦克',
+      base:  { str: 53, con: 32, dex: 10, int: 10, wis: 10, mov: 10, end: 10, luk: 10, cha: 10, ps: 10 },
+      primary: ['str', 'con'],
+      rankCaps: [
+        { str: 600, con: 600, dex: 200, int: 225, wis: 225, mov: 150, end: 100, luk: 100, cha: 200, ps: 150 },
+        { str: 672, con: 672, dex: 212, int: 237, wis: 237, mov: 162, end: 112, luk: 112, cha: 212, ps: 162 },
+        { str: 732, con: 732, dex: 222, int: 247, wis: 247, mov: 172, end: 122, luk: 122, cha: 222, ps: 172 },
+        { str: 792, con: 792, dex: 232, int: 257, wis: 257, mov: 182, end: 132, luk: 132, cha: 232, ps: 182 },
+        { str: 852, con: 852, dex: 242, int: 267, wis: 267, mov: 192, end: 142, luk: 142, cha: 242, ps: 192 },
+        { str: 912, con: 912, dex: 252, int: 277, wis: 277, mov: 202, end: 152, luk: 152, cha: 252, ps: 202 }
+      ],
+      subClasses: [
+        { name: '至尊骑士', bonus: { str: 59, con: 41 } },
+        { name: '狂战士',   bonus: { str: 5, con: 23, dex: 27, mov: 45 } },
+        { name: '武圣',     bonus: { str: 5, con: 23, dex: 54, mov: 18 } },
+        { name: '魔战神',   bonus: { str: 5, con: 32, int: 36, ps: 27 } },
+        { name: '圣武士',   bonus: { str: 5, con: 32, wis: 36, ps: 27 } }
+      ]
+    },
+    thief: {
+      id: 'thief',
+      name: '盗贼',
+      icon: '🗡️',
+      role: '近战刺客',
+      base:  { str: 10, con: 20, dex: 43, int: 10, wis: 10, mov: 22, end: 10, luk: 20, cha: 10, ps: 10 },
+      primary: ['dex', 'con'],
+      rankCaps: [
+        { str: 250, con: 450, dex: 400, int: 250, wis: 250, mov: 350, end: 100, luk: 150, cha: 200, ps: 150 },
+        { str: 262, con: 510, dex: 448, int: 262, wis: 262, mov: 398, end: 112, luk: 162, cha: 212, ps: 162 },
+        { str: 272, con: 560, dex: 488, int: 272, wis: 272, mov: 438, end: 122, luk: 172, cha: 222, ps: 172 },
+        { str: 282, con: 610, dex: 528, int: 282, wis: 282, mov: 478, end: 132, luk: 182, cha: 232, ps: 182 },
+        { str: 292, con: 660, dex: 568, int: 292, wis: 292, mov: 518, end: 142, luk: 192, cha: 242, ps: 192 },
+        { str: 302, con: 710, dex: 608, int: 302, wis: 302, mov: 558, end: 152, luk: 202, cha: 252, ps: 202 }
+      ],
+      subClasses: [
+        { name: '狼牙',       bonus: { str: 54, con: 40, dex: 3, mov: 3 } },
+        { name: '夜鷹',       bonus: { str: 30, con: 22, mov: 48 } },
+        { name: '侠盗',       bonus: { str: 57, con: 22, mov: 21 } },
+        { name: '幻影魔盗',   bonus: { con: 31, dex: 3, mov: 3, int: 36, ps: 27 } },
+        { name: '神逐者',     bonus: { con: 31, dex: 3, mov: 3, wis: 36, ps: 27 } }
+      ]
+    },
+    archer: {
+      id: 'archer',
+      name: '弓箭手',
+      icon: '🏹',
+      role: '远程射手',
+      base:  { str: 10, con: 22, dex: 53, int: 10, wis: 10, mov: 20, end: 10, luk: 10, cha: 10, ps: 10 },
+      primary: ['dex', 'con'],
+      rankCaps: [
+        { str: 200, con: 450, dex: 500, int: 275, wis: 275, mov: 300, end: 100, luk: 100, cha: 200, ps: 150 },
+        { str: 212, con: 510, dex: 560, int: 287, wis: 287, mov: 336, end: 112, luk: 112, cha: 212, ps: 162 },
+        { str: 222, con: 560, dex: 610, int: 297, wis: 297, mov: 366, end: 122, luk: 122, cha: 222, ps: 172 },
+        { str: 232, con: 610, dex: 660, int: 307, wis: 307, mov: 396, end: 132, luk: 132, cha: 232, ps: 182 },
+        { str: 242, con: 660, dex: 710, int: 317, wis: 317, mov: 426, end: 142, luk: 142, cha: 242, ps: 192 },
+        { str: 252, con: 710, dex: 760, int: 327, wis: 327, mov: 456, end: 152, luk: 152, cha: 252, ps: 202 }
+      ],
+      subClasses: [
+        { name: '征服之翼',   bonus: { str: 54, con: 40, dex: 4, mov: 2 } },
+        { name: '浪人箭神',   bonus: { con: 22, dex: 31, mov: 47 } },
+        { name: '神鹰之眼',   bonus: { con: 22, dex: 58, mov: 20 } },
+        { name: '魔箭神',     bonus: { con: 31, dex: 4, mov: 2, int: 36, ps: 27 } },
+        { name: '神临箭士',   bonus: { con: 31, dex: 4, mov: 2, wis: 36, ps: 27 } }
+      ]
+    },
+    wizard: {
+      id: 'wizard',
+      name: '法师',
+      icon: '🔥',
+      role: '魔法炮台',
+      base:  { str: 10, con: 15, dex: 10, int: 43, wis: 10, mov: 10, end: 20, luk: 10, cha: 10, ps: 27 },
+      primary: ['int', 'con'],
+      rankCaps: [
+        { str: 200, con: 350, dex: 300, int: 550, wis: 200, mov: 150, end: 100, luk: 50,  cha: 100, ps: 250 },
+        { str: 212, con: 398, dex: 312, int: 622, wis: 212, mov: 162, end: 112, luk: 62,  cha: 112, ps: 286 },
+        { str: 222, con: 438, dex: 322, int: 682, wis: 222, mov: 172, end: 122, luk: 72,  cha: 122, ps: 316 },
+        { str: 232, con: 478, dex: 332, int: 742, wis: 232, mov: 182, end: 132, luk: 82,  cha: 132, ps: 346 },
+        { str: 242, con: 518, dex: 342, int: 802, wis: 242, mov: 192, end: 142, luk: 92,  cha: 142, ps: 376 },
+        { str: 252, con: 558, dex: 352, int: 862, wis: 252, mov: 202, end: 152, luk: 102, cha: 152, ps: 406 }
+      ],
+      subClasses: [
+        { name: '魔战巫师', bonus: { str: 54, con: 39, int: 5, ps: 2 } },
+        { name: '大占卜师', bonus: { con: 21, dex: 27, mov: 45, int: 5, ps: 2 } },
+        { name: '超法师',   bonus: { con: 21, dex: 54, mov: 18, int: 5, ps: 2 } },
+        { name: '大贤者',   bonus: { con: 30, int: 41, ps: 29 } }
+      ]
+    },
+    priest: {
+      id: 'priest',
+      name: '祭司',
+      icon: '✨',
+      role: '治疗辅助',
+      base:  { str: 10, con: 20, dex: 10, int: 10, wis: 38, mov: 10, end: 20, luk: 10, cha: 10, ps: 27 },
+      primary: ['wis', 'con'],
+      rankCaps: [
+        { str: 300, con: 450, dex: 200, int: 200, wis: 480, mov: 150, end: 170, luk: 50,  cha: 200, ps: 250 },
+        { str: 312, con: 510, dex: 212, int: 212, wis: 540, mov: 162, end: 182, luk: 62,  cha: 212, ps: 286 },
+        { str: 322, con: 560, dex: 222, int: 222, wis: 590, mov: 172, end: 192, luk: 72,  cha: 222, ps: 316 },
+        { str: 332, con: 610, dex: 232, int: 232, wis: 640, mov: 182, end: 202, luk: 82,  cha: 232, ps: 346 },
+        { str: 342, con: 660, dex: 242, int: 242, wis: 690, mov: 192, end: 212, luk: 92,  cha: 242, ps: 376 },
+        { str: 352, con: 710, dex: 252, int: 252, wis: 740, mov: 202, end: 222, luk: 102, cha: 252, ps: 406 }
+      ],
+      subClasses: [
+        { name: '圣殿骑士', bonus: { str: 54, con: 40, wis: 4, ps: 2 } },
+        { name: '堕天使',   bonus: { con: 22, dex: 27, mov: 45, wis: 4, ps: 2 } },
+        { name: '神之怒',   bonus: { con: 22, dex: 54, mov: 18, wis: 4, ps: 2 } },
+        { name: '贤者',     bonus: { con: 31, wis: 40, ps: 29 } }
+      ]
+    }
+  };
+
+  const STAT_META = {
+    str: { key: 'str', label: '力量', desc: '物理攻击·武器需求', icon: '💪' },
+    con: { key: 'con', label: '体质', desc: 'HP·双防·抗暴', icon: '❤️' },
+    dex: { key: 'dex', label: '敏捷', desc: '远程攻击·攻速·闪避', icon: '💨' },
+    int: { key: 'int', label: '智力', desc: '魔法攻击·法术记忆', icon: '🧠' },
+    wis: { key: 'wis', label: '智慧', desc: '法术防御·治疗效果', icon: '📿' },
+    mov: { key: 'mov', label: '移动', desc: '移速·负重上限', icon: '👟' },
+    end: { key: 'end', label: '耐力', desc: '士气·技能磨练', icon: '⚡' },
+    luk: { key: 'luk', label: '运气', desc: '暴击率·掉落率', icon: '🍀' },
+    cha: { key: 'cha', label: '魅力', desc: 'NPC交互·回复CP', icon: '👑' },
+    ps:  { key: 'ps',  label: '圣/魔能', desc: '神圣能量·魔法能量', icon: '💠' }
+  };
+
+  const STAT_ORDER = ['str', 'dex', 'con', 'wis', 'int', 'mov', 'end', 'cha', 'luk', 'ps'];
+
+  // ============================================================
+  // APPLICATION STATE
+  // ============================================================
+  const state = {
+    classId: 'warrior',
+    level: 60,
+    rank: 0,          // 0=未转职, 1=一转, ... 5=五转
+    subClassIndex: -1, // -1 = 未选择子职业, 0..N = 子职业索引
+    extras: {}        // { statKey: extraPoints }
+  };
+
+  function classDef()  { return CLASS_DEFS[state.classId]; }
+  function totalPool() { return (state.level - 1) * 10; }
+  function spent()     { return Object.values(state.extras).reduce((a, b) => a + b, 0); }
+  function remaining() { return totalPool() - spent(); }
+  function subClassBonus(statKey) {
+    var cd = classDef();
+    if (state.subClassIndex < 0 || !cd.subClasses) return 0;
+    var sc = cd.subClasses[state.subClassIndex];
+    return (sc && sc.bonus[statKey]) || 0;
+  }
+  function actual(statKey) {
+    return (classDef().base[statKey] || 0) + (state.extras[statKey] || 0) + subClassBonus(statKey);
+  }
+  function statCap(statKey) {
+    var cd = classDef();
+    return (cd.rankCaps[state.rank] && cd.rankCaps[state.rank][statKey]) || 999;
+  }
+
+  // ============================================================
+  // UNDO / REDO
+  // ============================================================
+  const MAX_HISTORY = 80;
+  var undoStack = [];
+  var redoStack = [];
+
+  function snapshot() {
+    var ex = {};
+    Object.keys(state.extras).forEach(function (k) { ex[k] = state.extras[k]; });
+    return { classId: state.classId, level: state.level, rank: state.rank, subClassIndex: state.subClassIndex, extras: ex };
+  }
+
+  function restore(snap) {
+    state.classId = snap.classId;
+    state.level = snap.level;
+    state.rank = snap.rank;
+    state.subClassIndex = (snap.subClassIndex != null) ? snap.subClassIndex : -1;
+    state.extras = {};
+    Object.keys(snap.extras).forEach(function (k) { state.extras[k] = snap.extras[k]; });
+  }
+
+  function pushHistory() {
+    undoStack.push(snapshot());
+    if (undoStack.length > MAX_HISTORY) { undoStack.shift(); }
+    redoStack = [];
+  }
+
+  function undo() {
+    if (undoStack.length === 0) { toast('没有更多操作可以撤销'); return; }
+    redoStack.push(snapshot());
+    restore(undoStack.pop());
+    renderAll();
+    toast('已撤销');
+  }
+
+  function redo() {
+    if (redoStack.length === 0) { toast('没有更多操作可以恢复'); return; }
+    undoStack.push(snapshot());
+    restore(redoStack.pop());
+    renderAll();
+    toast('已恢复');
+  }
+
+  function fullReset() {
+    pushHistory();
+    state.extras = {};
+    state.level = 60;
+    state.rank = 0;
+    state.classId = 'warrior';
+    state.subClassIndex = -1;
+    renderAll();
+    toast('已全部重置');
+  }
+
+  // ============================================================
+  // URL SERIALIZATION (for sharing)
+  // ============================================================
+  function encodeState() {
+    const payload = { c: state.classId, lv: state.level, rk: state.rank, sc: state.subClassIndex, ex: state.extras };
+    return btoa(encodeURIComponent(JSON.stringify(payload)));
+  }
+
+  function decodeState(raw) {
+    try {
+      return JSON.parse(decodeURIComponent(atob(raw)));
+    } catch (_) { return null; }
+  }
+
+  function loadFromURL() {
+    const raw = new URLSearchParams(location.search).get('s');
+    if (!raw) return;
+    const data = decodeState(raw);
+    if (!data || !CLASS_DEFS[data.c]) return;
+    state.classId = data.c;
+    state.level = Math.max(1, Math.min(150, data.lv || 60));
+    state.rank = Math.max(0, Math.min(5, data.rk || 0));
+    state.subClassIndex = (data.sc != null) ? Math.max(-1, data.sc) : -1;
+    state.extras = data.ex || {};
+  }
+
+  // ============================================================
+  // RENDER FUNCTIONS
+  // ============================================================
+
+  function renderClassPicker() {
+    const container = document.getElementById('classPicker');
+    container.innerHTML = Object.values(CLASS_DEFS).map(c => {
+      const sel = state.classId === c.id ? ' selected' : '';
+      return `<div class="class-card${sel}" data-class="${c.id}">
+        <span class="class-icon">${c.icon}</span>
+        <span class="class-name">${c.name}</span>
+        <span class="class-role">${c.role}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function renderLevel() {
+    const slider = document.getElementById('levelSlider');
+    slider.value = state.level;
+    document.getElementById('levelNumber').textContent = state.level;
+    document.getElementById('levelTotal').textContent = totalPool() + ' 点';
+  }
+
+  function renderPointsBadge() {
+    const rem = remaining();
+    const badge = document.getElementById('pointsBadge');
+    const display = document.getElementById('remainingDisplay');
+    display.textContent = rem;
+    badge.classList.remove('depleted', 'full');
+    if (rem <= 0) badge.classList.add('depleted');
+    else if (rem >= totalPool() * 0.8) badge.classList.add('full');
+  }
+
+  function renderStatList() {
+    const container = document.getElementById('statList');
+    const cd = classDef();
+    const rem = remaining();
+
+    container.innerHTML = STAT_ORDER.map(key => {
+      const meta = STAT_META[key];
+      const val = actual(key);
+      const cap = statCap(key);
+      const isPrimary = cd.primary.includes(key);
+      const isCapped = val >= cap;
+      const capPct = Math.min(100, Math.round((val / cap) * 100));
+
+      const rowClass = [
+        isPrimary ? 'primary-stat' : '',
+        isCapped ? 'at-cap' : ''
+      ].filter(Boolean).join(' ');
+
+      const canDecrement = val > (cd.base[key] || 0);
+      const canIncrement = rem > 0 && !isCapped;
+      const scBonus = subClassBonus(key);
+
+      return `<div class="stat-row ${rowClass}">
+        <div class="stat-name-block">
+          <span class="stat-priority">★</span>
+          <span class="stat-name">${meta.icon} ${meta.label}</span>
+        </div>
+        <div class="stat-bar-track">
+          <div class="stat-bar-fill" style="width:${capPct}%"></div>
+        </div>
+        <div class="stat-current">${val}${scBonus > 0 ? '<span style="font-size:10px;color:var(--accent-life);">(+' + scBonus + ')</span>' : ''}</div>
+        <div class="stat-arrows">
+          <button class="arrow-minus10" data-stat="${key}" data-dir="-10" ${!canDecrement ? 'disabled' : ''}>−10</button>
+          <button class="arrow-down" data-stat="${key}" data-dir="-1" ${!canDecrement ? 'disabled' : ''}>−</button>
+          <button class="arrow-up" data-stat="${key}" data-dir="+1" ${!canIncrement ? 'disabled' : ''}>+</button>
+          <button class="arrow-plus10" data-stat="${key}" data-dir="+10" ${!canIncrement ? 'disabled' : ''}>+10</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderDerived() {
+    const cd = classDef();
+    const str = actual('str'), con = actual('con'), dex = actual('dex');
+    const int_ = actual('int'), wis = actual('wis');
+
+    const hp        = Math.floor(con * 30 + str * 5 + state.level * 20);
+    const physAtk   = Math.floor(str * 2 + state.level * 1.5);
+    const magicAtk  = Math.floor(int_ * 2 + wis * 1.5);
+    const physDef   = Math.floor(con * 1.5 + state.level * 0.8);
+    const magicDef  = Math.floor(wis * 1.5 + con * 0.8);
+    const critRate  = Math.min(80, Math.floor(dex * 0.15 + state.level * 0.3));
+    const multiHit  = Math.min(50, Math.floor(dex * 0.08 + int_ * 0.05));
+    const carry     = 'Lv.' + state.level;
+
+    const cells = [
+      ['❤️ 生命值 HP',   hp.toLocaleString()],
+      ['⚔️ 物理攻击',    physAtk.toLocaleString()],
+      ['🔥 魔法攻击',    magicAtk.toLocaleString()],
+      ['🛡️ 物理防御',    physDef.toLocaleString()],
+      ['🔮 魔法防御',    magicDef.toLocaleString()],
+      ['💥 暴击率',      critRate + '%'],
+      ['✨ 多重打击',    multiHit + '%'],
+      ['🎒 负重/移速',   carry]
+    ];
+
+    document.getElementById('derivedGrid').innerHTML = cells.map(([label, value]) =>
+      `<div class="derived-cell">
+        <span class="derived-label">${label}</span>
+        <span class="derived-value">${value}</span>
+      </div>`
+    ).join('');
+  }
+
+  const RANK_LABELS = ['未转职', '一转', '二转', '三转', '四转', '五转'];
+
+  function renderRank() {
+    var container = document.getElementById('rankSelector');
+    container.innerHTML = RANK_LABELS.map(function (label, i) {
+      var sel = state.rank === i ? ' selected' : '';
+      return '<div class="rank-chip' + sel + '" data-rank="' + i + '">' +
+        '<span class="rank-num">' + (i === 0 ? '0' : '★'.repeat(i)) + '</span>' +
+        '<span class="rank-label">' + label + '</span>' +
+        '</div>';
+    }).join('');
+  }
+
+  function renderSubClass() {
+    var cd = classDef();
+    var container = document.getElementById('subClassPicker');
+    var section = document.getElementById('subClassSection');
+    if (!cd.subClasses || cd.subClasses.length === 0) {
+      section.style.display = 'none';
+      return;
+    }
+    section.style.display = '';
+
+    container.innerHTML = cd.subClasses.map(function (sc, i) {
+      var sel = state.subClassIndex === i ? ' selected' : '';
+      // Build bonus summary
+      var parts = [];
+      Object.keys(sc.bonus).forEach(function (k) {
+        var meta = STAT_META[k];
+        if (meta) { parts.push(meta.icon + '+' + sc.bonus[k]); }
+      });
+      return '<div class="sub-class-card' + sel + '" data-sc="' + i + '">' +
+        '<span>' + sc.name + '</span>' +
+        '<span class="sc-bonus">' + parts.join(' ') + '</span>' +
+        '</div>';
+    }).join('');
+  }
+
+  function renderAll() {
+    renderClassPicker();
+    renderSubClass();
+    renderRank();
+    renderLevel();
+    renderPointsBadge();
+    renderStatList();
+    renderDerived();
+  }
+
+  // ============================================================
+  // ACTIONS
+  // ============================================================
+
+  function selectClass(classId) {
+    if (state.classId === classId) return;
+    pushHistory();
+    state.classId = classId;
+    state.subClassIndex = -1;
+    state.extras = {};
+    renderAll();
+    toast(`已选择 ${CLASS_DEFS[classId].name}`);
+  }
+
+  function adjustStat(statKey, delta) {
+    if (delta > 0) {
+      if (remaining() <= 0) { toast('没有剩余点数了'); return; }
+      if (actual(statKey) >= statCap(statKey)) { toast('已达属性上限'); return; }
+      const room = statCap(statKey) - actual(statKey);
+      delta = Math.min(delta, remaining(), room);
+    }
+    if (delta < 0) {
+      const cur = state.extras[statKey] || 0;
+      if (cur <= 0) return;
+      delta = Math.max(delta, -cur);
+    }
+
+    pushHistory();
+    const cur = state.extras[statKey] || 0;
+    const next = cur + delta;
+    if (next <= 0) {
+      delete state.extras[statKey];
+    } else {
+      state.extras[statKey] = next;
+    }
+    renderAll();
+    if (Math.abs(delta) > 1) {
+      toast(STAT_META[statKey].label + (delta > 0 ? ' +' : ' ') + delta);
+    }
+  }
+
+  function resetClass() {
+    pushHistory();
+    state.extras = {};
+    renderAll();
+    toast('属性已重置');
+  }
+
+  function generateShareLink() {
+    const encoded = encodeState();
+    const url = location.origin + location.pathname + '?s=' + encoded;
+    const el = document.getElementById('shareUrl');
+    el.textContent = url;
+    el.style.display = 'block';
+    document.getElementById('btnCopy').style.display = '';
+    toast('链接已生成');
+  }
+
+  function copyShareLink() {
+    const text = document.getElementById('shareUrl').textContent;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => toast('已复制到剪贴板'));
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      toast('已复制');
+    }
+  }
+
+  // ============================================================
+  // TOAST
+  // ============================================================
+  let toastTimer;
+  function toast(message) {
+    const el = document.getElementById('toast');
+    el.textContent = message;
+    el.classList.add('visible');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove('visible'); }, 1800);
+  }
+
+  // ============================================================
+  // EVENT DELEGATION
+  // ============================================================
+
+  document.getElementById('classPicker').addEventListener('click', function (e) {
+    const card = e.target.closest('.class-card');
+    if (!card) return;
+    selectClass(card.dataset.class);
+  });
+
+  document.getElementById('subClassPicker').addEventListener('click', function (e) {
+    var card = e.target.closest('.sub-class-card');
+    if (!card) return;
+    var idx = parseInt(card.dataset.sc);
+    if (state.subClassIndex === idx) {
+      // Deselect
+      pushHistory();
+      state.subClassIndex = -1;
+      renderAll();
+      toast('已取消转职职业');
+      return;
+    }
+    pushHistory();
+    state.subClassIndex = idx;
+    renderAll();
+    toast('转职为 ' + classDef().subClasses[idx].name);
+  });
+
+  document.getElementById('rankSelector').addEventListener('click', function (e) {
+    const chip = e.target.closest('.rank-chip');
+    if (!chip) return;
+    var rank = parseInt(chip.dataset.rank);
+    if (state.rank === rank) return;
+    pushHistory();
+    state.rank = rank;
+    // Truncate extras that exceed new caps
+    var cd = classDef();
+    STAT_ORDER.forEach(function (key) {
+      var cap = statCap(key);
+      var act = actual(key);
+      if (act > cap) {
+        var over = act - cap;
+        if (state.extras[key]) {
+          state.extras[key] = Math.max(0, state.extras[key] - over);
+          if (state.extras[key] <= 0) delete state.extras[key];
+        }
+      }
+    });
+    renderAll();
+    toast('切换到 ' + RANK_LABELS[rank]);
+  });
+
+  document.getElementById('levelSlider').addEventListener('input', function () {
+    pushHistory();
+    state.level = parseInt(this.value);
+    // Truncate extras if pool shrunk
+    while (remaining() < 0) {
+      const keys = Object.keys(state.extras);
+      if (!keys.length) break;
+      const last = keys[keys.length - 1];
+      state.extras[last]--;
+      if (state.extras[last] <= 0) delete state.extras[last];
+    }
+    renderAll();
+  });
+
+  document.getElementById('statList').addEventListener('click', function (e) {
+    const btn = e.target.closest('button');
+    if (!btn || !btn.dataset.stat) return;
+    const delta = parseInt(btn.dataset.dir);
+    adjustStat(btn.dataset.stat, delta);
+  });
+
+  document.getElementById('btnShare').addEventListener('click', generateShareLink);
+  document.getElementById('btnCopy').addEventListener('click', copyShareLink);
+  document.getElementById('btnUndo').addEventListener('click', undo);
+  document.getElementById('btnRedo').addEventListener('click', redo);
+  document.getElementById('btnResetClass').addEventListener('click', resetClass);
+  document.getElementById('btnFullReset').addEventListener('click', fullReset);
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', function (e) {
+    if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); }
+    if (e.ctrlKey && e.key === 'y') { e.preventDefault(); redo(); }
+  });
+
+  // ============================================================
+  // BOOTSTRAP
+  // ============================================================
+  loadFromURL();
+  renderAll();
+
+  // Show hint if shared URL was loaded
+  if (location.search.includes('s=')) {
+    setTimeout(function () { toast('已从分享链接加载方案'); }, 400);
+  }
+
+})();
+</script>
+
+</body>
+</html>
