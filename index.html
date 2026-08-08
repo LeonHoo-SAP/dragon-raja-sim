@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -846,7 +846,7 @@
   };
 
   function classDef()  { return CLASS_DEFS[state.classId]; }
-  function totalPool() { return (state.level - 1) * 10; }
+  function totalPool() { return (state.level - 1) * 10 + state.rank * 100; }
   function spent()     { return Object.values(state.extras).reduce((a, b) => a + b, 0); }
   function remaining() { return totalPool() - spent(); }
   function subClassBonus(statKey) {
@@ -964,7 +964,10 @@
     const slider = document.getElementById('levelSlider');
     slider.value = state.level;
     document.getElementById('levelNumber').textContent = state.level;
-    document.getElementById('levelTotal').textContent = totalPool() + ' 点';
+    const rankBonus = state.rank * 100;
+    var hint = totalPool() + ' 点';
+    if (state.rank > 0) { hint += '（含' + state.rank + '转奖励 +' + rankBonus + '）'; }
+    document.getElementById('levelTotal').textContent = hint;
   }
 
   function renderPointsBadge() {
@@ -1356,3 +1359,4 @@
 
 </body>
 </html>
+
